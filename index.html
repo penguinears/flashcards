@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>revisioncanbe.fun flashcards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f6fa}
+nav{background:#7f8cff;padding:10px;display:flex;gap:10px;align-items:center}
+nav .brand{color:#fff;font-weight:bold;margin-right:10px}
+nav button{background:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:bold;cursor:pointer}
+nav button.active{background:#dfe3ff}
+main{padding:20px}
+.hidden{display:none}
+input,select,button{padding:8px;border-radius:6px;border:1px solid #ccc;font-family:inherit}
+
+.preview-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.mini-card{background:white;padding:10px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+
+.collections{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.collection-box{background:white;padding:12px 16px;border-radius:10px;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px}
+.collection-box.active{background:#dfe3ff}
+.collection-box span.tag{font-size:12px;color:#555}
+#collectionCards>div{background:white;margin-top:8px;padding:10px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.15);font-size:14px}
+
+.study-card{max-width:400px;margin:30px auto;background:white;padding:30px;border-radius:14px;text-align:center;font-size:18px;min-height:150px;box-shadow:0 4px 10px rgba(0,0,0,.15);position:relative}
+.study-controls{display:flex;justify-content:space-between;max-width:400px;margin:auto}
+.flip-wrap{perspective:1000px}
+.flip-card{transition:transform .6s;transform-style:preserve-3d;position:relative;min-height:120px}
+.flip-card.flipped{transform:rotateY(180deg)}
+.flip-face{backface-visibility:hidden;position:absolute;width:100%;left:0;top:0;padding:10px;box-sizing:border-box}
+.flip-back{transform:rotateY(180deg)}
+
+canvas{background:#70c5ce;display:block;margin:20px auto;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.25)}
+
+#quizBox{max-width:400px;margin:10px auto 0;background:white;padding:20px;border-radius:14px;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+#quizQuestion{font-weight:bold;margin-bottom:10px}
+#quizAnswerInput{width:100%;box-sizing:border-box;margin-bottom:10px}
+#quizSubmitBtn{width:100%;background:#7f8cff;color:#fff;border:none;font-weight:bold;cursor:pointer}
+#quizSubmitBtn:hover{background:#6b76f0}
+#scoreText{text-align:center;font-weight:bold}
+
+@media print{
+  nav,button{display:none}
+  .print-page{page-break-after:always}
+  .print-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .print-card{border:1px solid #000;padding:10px;min-height:40px;box-sizing:border-box;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">revisioncanbe.fun flashcards</span>
+  <button id="tab-create" class="active">Create</button>
+  <button id="tab-collections">Collections</button>
+  <button id="tab-cards">Study</button>
+  <button id="tab-game">Game</button>
+  <button id="btn-export-print">Export to Print</button>
+</nav>
+
+<main>
+
+<section id="page-create">
+  <h2>Create Card</h2>
+  <input id="questionInput" placeholder="Question"><br><br>
+  <input id="answerInput" placeholder="Answer"><br><br>
+  <label for="collectionSelect"><small>Collection</small></label><br>
+  <select id="collectionSelect" style="margin-top:10px"></select><br><br>
+  <button id="addCardBtn">Add</button>
+  <h3>Recently Added</h3>
+  <div class="preview-cards" id="previewCards"></div>
+</section>
+
+<section id="page-collections" class="hidden">
+  <h2>Collections</h2>
+  <input id="newCollectionName" placeholder="New collection">
+  <button id="addCollectionBtn">Add</button>
+  <div style="margin-top:10px">
+    <button id="btn-export-json">Export flashcards (JSON)</button>
+    <label style="margin-left:10px">
+      <input type="file" id="importFile" accept=".json" style="display:none">
+      <button id="btn-import-json" type="button">Import flashcards (JSON)</button>
+    </label>
+  </div>
+  <div class="collections" id="collectionsList"></div>
+  <h3>Cards in selected collections</h3>
+  <div id="collectionCards"></div>
+</section>
+
+<section id="page-cards" class="hidden">
+  <h2>Study</h2>
+  <div class="study-card flip-wrap">
+    <div class="flip-card" id="flipCard">
+      <div class="flip-face" id="frontFace"></div>
+      <div class="flip-face flip-back" id="backFace"></div>
+    </div>
+  </div>
+  <div class="study-controls">
+    <button id="prevBtn">⬅</button>
+    <button id="flipBtn">Flip</button>
+    <button id="nextBtn">➡</button>
+  </div>
+</section>
+
+<section id="page-game" class="hidden">
+  <div id="gameIntro" style="text-align:center">
+    <img src="https://th.bing.com/th/id/OIP.z93Ev5MqTxPAIj5P6LDvrQHaEH?w=298&h=180" style="max-width:200px">
+    <h2>Flappy Flashcards</h2>
+    <p>Fly through pipes by answering your cards.</p>
+    <button onclick="startGame()">Play</button>
+  </div>
+
+  <button id="backToGameMenu" class="hidden" style="
+    display:block;
+    margin:10px auto;
+    padding:8px 14px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    background:white;
+    cursor:pointer;
+  ">Back</button>
+
+  <canvas id="gameCanvas" width="320" height="480" class="hidden"></canvas>
+  <p id="scoreText" class="hidden"></p>
+
+  <div id="quizBox" class="hidden">
+    <p id="quizQuestion"></p>
+    <input id="quizAnswerInput" placeholder="Type your answer">
+    <button id="quizSubmitBtn">Submit</button>
+  </div>
+</section>
+
+</main>
+
+<script>
+// DATA
+let data = JSON.parse(localStorage.getItem("flashcardsData")) || {
+  collections:[{id:0,name:"All"},{id:1,name:"Default"}],
+  cards:[],
+  activeCollectionIds:[0]
+};
+if(!data.activeCollectionIds){
+  if(typeof data.activeCollectionId==="number") data.activeCollectionIds=[data.activeCollectionId];
+  else data.activeCollectionIds=[0];
+  delete data.activeCollectionId;
+}
+function save(){localStorage.setItem("flashcardsData",JSON.stringify(data));}
+
+// NAV
+const pages=["create","collections","cards","game"];
+function showPage(p){
+  pages.forEach(x=>document.getElementById("page-"+x).classList.add("hidden"));
+  document.getElementById("page-"+p).classList.remove("hidden");
+  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+  document.getElementById("tab-"+p).classList.add("active");
+  if(p==="cards")loadStudy();
+  if(p==="collections")renderCollectionCards();
+}
+pages.forEach(p=>document.getElementById("tab-"+p).onclick=()=>showPage(p));
+
+// COLLECTION SELECT FOR CREATE
+const collectionSelect=document.getElementById("collectionSelect");
+function renderCollectionSelect(){
+  collectionSelect.innerHTML="";
+  data.collections.forEach(c=>{
+    if(c.id===0)return;
+    let o=document.createElement("option");
+    o.value=c.id;o.textContent=c.name;
+    collectionSelect.appendChild(o);
+  });
+  if(collectionSelect.options.length)collectionSelect.value=collectionSelect.options[0].value;
+}
+
+// MULTI COLLECTION
+const collectionsList=document.getElementById("collectionsList");
+function toggleCollectionSelection(id){
+  let ids=data.activeCollectionIds.slice();
+  if(id===0){data.activeCollectionIds=[0];return;}
+  ids=ids.filter(x=>x!==0);
+  if(ids.includes(id)){
+    if(ids.length===1){data.activeCollectionIds=[0];return;}
+    ids=ids.filter(x=>x!==id);
+  }else ids.push(id);
+  if(!ids.length)ids=[0];
+  data.activeCollectionIds=ids;
+}
+function renderCollections(){
+  collectionsList.innerHTML="";
+  data.collections.forEach(c=>{
+    let d=document.createElement("div");
+    d.className="collection-box"+(data.activeCollectionIds.includes(c.id)?" active":"");
+    let label=document.createElement("span");label.textContent=c.name;
+    let tag=document.createElement("span");tag.className="tag";if(c.id===0)tag.textContent="All cards";
+    d.appendChild(label);if(tag.textContent)d.appendChild(tag);
+    d.onclick=()=>{toggleCollectionSelection(c.id);save();renderCollections();renderCollectionCards();};
+    collectionsList.appendChild(d);
+  });
+}
+function getActiveCards(){
+  if(!data.cards.length)return[];
+  const ids=data.activeCollectionIds;
+  if(ids.includes(0))return data.cards.slice();
+  return data.cards.filter(c=>ids.includes(c.collectionId));
+}
+const collectionCards=document.getElementById("collectionCards");
+function renderCollectionCards(){
+  collectionCards.innerHTML="";
+  const cards=getActiveCards();
+  if(!cards.length){collectionCards.textContent="No cards in selected collections.";return;}
+  cards.forEach(c=>{
+    let d=document.createElement("div");
+    d.innerHTML=`<b>${c.question}</b><br><small>${c.answer}</small>`;
+    collectionCards.appendChild(d);
+  });
+}
+
+// ADD COLLECTION
+document.getElementById("addCollectionBtn").onclick=()=>{
+  let n=document.getElementById("newCollectionName").value.trim();
+  if(!n)return;
+  data.collections.push({id:Date.now(),name:n});
+  document.getElementById("newCollectionName").value="";
+  save();renderCollections();renderCollectionSelect();
+};
+
+// ADD CARD
+document.getElementById("addCardBtn").onclick=()=>{
+  let q=document.getElementById("questionInput").value.trim();
+  let a=document.getElementById("answerInput").value.trim();
+  if(!q||!a||!collectionSelect.value)return;
+  data.cards.push({id:Date.now(),question:q,answer:a,collectionId:+collectionSelect.value});
+  document.getElementById("questionInput").value="";
+  document.getElementById("answerInput").value="";
+  save();renderPreview();
+};
+
+// PREVIEW
+const previewCards=document.getElementById("previewCards");
+function renderPreview(){
+  previewCards.innerHTML="";
+  data.cards.slice(-6).reverse().forEach(c=>{
+    let d=document.createElement("div");
+    d.className="mini-card";d.textContent=c.question;
+    previewCards.appendChild(d);
+  });
+}
+
+// STUDY
+let idx=0;
+const flipCard=document.getElementById("flipCard");
+const frontFace=document.getElementById("frontFace");
+const backFace=document.getElementById("backFace");
+function loadStudy(){idx=0;updateFlip();}
+function updateFlip(){
+  const cards=getActiveCards();
+  if(!cards.length){
+    frontFace.textContent="No cards in selected collections.";
+    backFace.textContent="";flipCard.classList.remove("flipped");return;
+  }
+  const c=cards[(idx+cards.length)%cards.length];
+  frontFace.textContent=c.question;
+  backFace.textContent=c.answer;
+  flipCard.classList.remove("flipped");
+}
+document.getElementById("flipBtn").onclick=()=>flipCard.classList.toggle("flipped");
+document.getElementById("prevBtn").onclick=()=>{idx--;updateFlip();}
+document.getElementById("nextBtn").onclick=()=>{idx++;updateFlip();};
+
+// GAME
+const canvas=document.getElementById("gameCanvas");
+const ctx=canvas.getContext("2d");
+const gameIntro=document.getElementById("gameIntro");
+const backToGameMenuBtn=document.getElementById("backToGameMenu");
+const quizBox=document.getElementById("quizBox");
+const quizQuestion=document.getElementById("quizQuestion");
+const quizAnswerInput=document.getElementById("quizAnswerInput");
+const quizSubmitBtn=document.getElementById("quizSubmitBtn");
+const scoreText=document.getElementById("scoreText");
+
+let bird={x:60,y:200,v:0};
+let pipes=[];
+let score=0;
+let paused=false;
+let currentCard=null;
+let gameRunning=false;
+
+const GRAVITY=0.15;
+const FLAP_STRENGTH=-7.5;
+const PIPE_GAP=220;
+const PIPE_SPEED=1.6;
+
+function startGame(){
+  const cards=getActiveCards();
+  if(!cards.length){alert("You need cards in the selected collections to play.");return;}
+  gameIntro.classList.add("hidden");
+  backToGameMenuBtn.classList.remove("hidden");
+  canvas.classList.remove("hidden");
+  scoreText.classList.remove("hidden");
+  resetGame();
+  if(!gameRunning){gameRunning=true;requestAnimationFrame(loop);}
+}
+function resetGame(){
+  bird={x:60,y:200,v:0};
+  pipes=[];score=0;paused=false;currentCard=null;
+  quizBox.classList.add("hidden");
+  newPipe();
+}
+function newPipe(){
+  let top=Math.random()*180+40;
+  pipes.push({x:320,top,gap:PIPE_GAP,asked:false,scored:false});
+}
+function askQuestionForPipe(pipe){
+  const cards=getActiveCards();
+  if(!cards.length){resetGame();return;}
+  paused=true;
+  currentCard={pipe:pipe,card:cards[Math.floor(Math.random()*cards.length)]};
+  quizQuestion.textContent=currentCard.card.question;
+  quizAnswerInput.value="";
+  quizBox.classList.remove("hidden");
+  quizAnswerInput.focus();
+}
+quizSubmitBtn.onclick=()=>{
+  if(!currentCard)return;
+  const userAns=quizAnswerInput.value.trim();
+  const correct=currentCard.card.answer.trim();
+  if(userAns.toLowerCase()===correct.toLowerCase()){
+    paused=false;quizBox.classList.add("hidden");currentCard=null;
+  }else crashAndReset();
+};
+function crashAndReset(){
+  paused=true;
+  let fallInterval=setInterval(()=>{
+    ctx.clearRect(0,0,320,480);
+    bird.v+=0.6;bird.y+=bird.v;
+    ctx.fillStyle="yellow";ctx.fillRect(bird.x,bird.y,20,20);
+    if(bird.y>480){
+      clearInterval(fallInterval);
+      quizBox.classList.add("hidden");
+      alert("Wrong answer! Game over.");
+      resetGame();paused=false;
+    }
+  },30);
+}
+function loop(){
+  if(!gameRunning)return;
+  if(!paused){
+    ctx.clearRect(0,0,320,480);
+    bird.v+=GRAVITY;bird.y+=bird.v;
+    ctx.fillStyle="yellow";ctx.fillRect(bird.x,bird.y,20,20);
+
+    pipes.forEach(p=>{
+      p.x-=PIPE_SPEED;
+      ctx.fillStyle="green";
+      ctx.fillRect(p.x,0,50,p.top);
+      ctx.fillRect(p.x,p.top+p.gap,50,480);
+
+      if(!p.asked&&p.x<bird.x+10){
+        p.asked=true;askQuestionForPipe(p);
+      }
+      if(!p.scored&&p.x+50<bird.x){
+        p.scored=true;score++;
+      }
+
+      const hitHoriz=bird.x+18>p.x&&bird.x<p.x+48;
+      const hitVert=(bird.y+2<p.top)||(bird.y+18>p.top+p.gap);
+      if(!paused&&hitHoriz&&hitVert)crashAndReset();
+    });
+
+    if(pipes[0]&&pipes[0].x<-60)pipes.shift();
+    if(!pipes.length||pipes[pipes.length-1].x<80)newPipe();
+
+    if(bird.y>460||bird.y<0)crashAndReset();
+    scoreText.textContent="Score: "+score;
+  }
+  requestAnimationFrame(loop);
+}
+canvas.addEventListener("mousedown",()=>{bird.v=FLAP_STRENGTH;});
+window.addEventListener("keydown",e=>{
+  if(e.code==="Space"){e.preventDefault();bird.v=FLAP_STRENGTH;}
+});
+backToGameMenuBtn.onclick=()=>{
+  gameRunning=false;paused=false;
+  quizBox.classList.add("hidden");
+  canvas.classList.add("hidden");
+  scoreText.classList.add("hidden");
+  backToGameMenuBtn.classList.add("hidden");
+  gameIntro.classList.remove("hidden");
+};
+
+// EXPORT TO PRINT
+document.getElementById("btn-export-print").onclick=()=>{
+  const cards=getActiveCards();
+  if(!cards.length){alert("No cards in selected collections to export.");return;}
+  const win=window.open("","_blank");
+  const perPage=9;
+  let html=`
+  <html><head><title>revisioncanbe.fun export</title>
+  <style>
+  body{font-family:Arial,Helvetica,sans-serif;margin:20px;background:#f5f6fa}
+  h1{margin-top:0}
+  .toolbar{margin-bottom:15px}
+  .toolbar button{padding:8px 14px;border-radius:8px;border:1px solid #ccc;background:white;cursor:pointer;font-weight:bold}
+  .print-page{page-break-after:always;margin-bottom:20px}
+  .print-title{margin:0 0 10px 0;font-size:18px}
+  .print-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .print-card{border:1px solid #000;padding:10px;min-height:60px;box-sizing:border-box;font-size:12px;background:#fff}
+  @media print{body{margin:10px;background:#fff}.toolbar{display:none}}
+  </style></head><body>
+  <h1>revisioncanbe.fun flashcards export</h1>
+  <div class="toolbar"><button onclick="window.print()">Print</button></div>`;
+  for(let i=0;i<cards.length;i+=perPage){
+    const chunk=cards.slice(i,i+perPage);
+    html+=`<div class="print-page"><h2 class="print-title">Questions</h2><div class="print-grid">`;
+    chunk.forEach(c=>{html+=`<div class="print-card">${c.question}</div>`;});
+    html+=`</div></div>`;
+    html+=`<div class="print-page"><h2 class="print-title">Answers</h2><div class="print-grid">`;
+    chunk.forEach(c=>{html+=`<div class="print-card">${c.answer}</div>`;});
+    html+=`</div></div>`;
+  }
+  html+=`</body></html>`;
+  win.document.open();win.document.write(html);win.document.close();
+};
+
+// JSON EXPORT / IMPORT
+document.getElementById("btn-export-json").onclick=()=>{
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download="flashcards.json";
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+};
+const importFile=document.getElementById("importFile");
+document.getElementById("btn-import-json").onclick=()=>importFile.click();
+importFile.addEventListener("change",e=>{
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const imported=JSON.parse(ev.target.result);
+      if(imported.collections&&imported.cards){
+        data=imported;
+        if(!data.activeCollectionIds)data.activeCollectionIds=[0];
+        save();
+        renderCollections();renderCollectionSelect();renderPreview();renderCollectionCards();
+        alert("Flashcards imported successfully.");
+      }else alert("Invalid file format.");
+    }catch(err){alert("Could not read file.");}
+  };
+  reader.readAsText(file);
+});
+
+// INIT
+renderCollections();
+renderCollectionSelect();
+renderPreview();
+save();
+</script>
+</body>
+</html>
