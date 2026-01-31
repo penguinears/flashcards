@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>flashcardsmadefun</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f6fa}
+nav{background:#7f8cff;padding:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+nav .brand{color:#fff;font-weight:bold;margin-right:10px}
+nav button{background:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:bold;cursor:pointer}
+nav button.active{background:#dfe3ff}
+main{padding:20px}
+.hidden{display:none}
+input,select,button{padding:8px;border-radius:6px;border:1px solid #ccc;font-family:inherit}
+
+/* Create preview */
+.preview-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.mini-card{background:white;padding:10px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+
+/* Collections */
+.collections{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.collection-box{background:white;padding:12px 16px;border-radius:10px;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px}
+.collection-box.active{background:#dfe3ff}
+.collection-box span.tag{font-size:12px;color:#555}
+#collectionCards>div{background:white;margin-top:8px;padding:10px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.15);font-size:14px}
+
+/* Cards page */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;max-width:900px;margin:0 auto}
+.cards-grid-item{background:white;padding:12px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.15);cursor:pointer;font-size:14px;min-height:80px;display:flex;align-items:flex-start}
+.cards-grid-item span{display:block;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
+
+.single-card-wrap{max-width:400px;margin:20px auto}
+.study-card{background:white;padding:30px;border-radius:14px;text-align:center;font-size:18px;min-height:150px;box-shadow:0 4px 10px rgba(0,0,0,.15);position:relative}
+.study-controls{display:flex;justify-content:space-between;max-width:400px;margin:10px auto}
+.flip-wrap{perspective:1000px}
+.flip-card{transition:transform .6s;transform-style:preserve-3d;position:relative;min-height:120px}
+.flip-card.flipped{transform:rotateY(180deg)}
+.flip-face{backface-visibility:hidden;position:absolute;width:100%;left:0;top:0;padding:10px;box-sizing:border-box}
+.flip-back{transform:rotateY(180deg)}
+.single-card-actions{max-width:400px;margin:10px auto;display:flex;gap:10px;justify-content:center}
+
+/* Train + Daily Trainer */
+.train-container{max-width:500px;margin:0 auto;text-align:center}
+.train-card{background:white;padding:30px;border-radius:14px;box-shadow:0 4px 10px rgba(0,0,0,.15);min-height:120px;margin-bottom:15px;font-size:18px}
+.train-input{width:100%;box-sizing:border-box;margin-bottom:10px}
+.train-buttons{display:flex;gap:10px;justify-content:center}
+.train-buttons button{flex:1}
+.train-summary{max-width:500px;margin:20px auto;background:white;padding:20px;border-radius:14px;box-shadow:0 4px 10px rgba(0,0,0,.15);text-align:left;font-size:14px}
+.train-summary ul{padding-left:18px}
+
+/* Game */
+canvas{background:#70c5ce;display:block;margin:20px auto;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.25)}
+#quizBox{max-width:400px;margin:10px auto 0;background:white;padding:20px;border-radius:14px;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+#quizQuestion{font-weight:bold;margin-bottom:10px}
+#quizAnswerInput{width:100%;box-sizing:border-box;margin-bottom:10px}
+#quizSubmitBtn{width:100%;background:#7f8cff;color:#fff;border:none;font-weight:bold;cursor:pointer}
+#quizSubmitBtn:hover{background:#6b76f0}
+#scoreText{text-align:center;font-weight:bold}
+
+/* Create Classroom page */
+.trainer-collections{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.trainer-collections label{background:white;padding:10px 12px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.15);display:flex;align-items:center;gap:6px;font-size:14px}
+
+/* Confetti */
+.confetti-piece{position:fixed;width:8px;height:14px;top:-20px;z-index:2000;opacity:0.9;border-radius:2px;pointer-events:none}
+
+/* Print */
+@media print{
+  nav,button{display:none}
+  .print-page{page-break-after:always}
+  .print-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .print-card{border:1px solid #000;padding:10px;min-height:40px;box-sizing:border-box;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">flashcardsmadefun</span>
+  <button id="tab-create" class="active">Create</button>
+  <button id="tab-collections">Collections</button>
+  <button id="tab-cards">Cards</button>
+  <button id="tab-train">Train</button>
+  <button id="tab-daily">Daily Trainer</button>
+  <button id="tab-game">Game</button>
+  <button id="tab-trainer">Create Classroom</button>
+  <button id="btn-export-print">Export to Print</button>
+</nav>
+
+<main>
+
+<!-- CREATE -->
+<section id="page-create">
+  <h2>Create Card</h2>
+  <input id="questionInput" placeholder="Question"><br><br>
+  <input id="answerInput" placeholder="Answer"><br><br>
+  <label for="collectionSelect"><small>Collection</small></label><br>
+  <select id="collectionSelect" style="margin-top:10px"></select><br><br>
+  <button id="addCardBtn">Add</button>
+  <h3>Recently Added</h3>
+  <div class="preview-cards" id="previewCards"></div>
+</section>
+
+<!-- COLLECTIONS -->
+<section id="page-collections" class="hidden">
+  <h2>Collections</h2>
+  <input id="newCollectionName" placeholder="New collection">
+  <button id="addCollectionBtn">Add</button>
+  <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+    <button id="btn-export-json">Export flashcards (JSON)</button>
+    <button id="btn-import-json" type="button">Import flashcards (JSON)</button>
+    <input type="file" id="importFile" accept=".json" style="display:none">
+  </div>
+  <div class="collections" id="collectionsList"></div>
+  <h3>Cards in selected collections</h3>
+  <div id="collectionCards"></div>
+</section>
+
+<!-- CARDS -->
+<section id="page-cards" class="hidden">
+  <h2>Cards</h2>
+
+  <div id="cardsGridView">
+    <div class="cards-grid" id="cardsGrid"></div>
+  </div>
+
+  <div id="singleCardView" class="hidden">
+    <div class="single-card-wrap flip-wrap">
+      <div class="study-card">
+        <div class="flip-card" id="flipCard">
+          <div class="flip-face" id="frontFace"></div>
+          <div class="flip-face flip-back" id="backFace"></div>
+        </div>
+      </div>
+    </div>
+    <div class="study-controls">
+      <button id="cardsBackToGridBtn">Back</button>
+      <button id="prevBtn">⬅</button>
+      <button id="flipBtn">Flip</button>
+      <button id="nextBtn">➡</button>
+    </div>
+    <div class="single-card-actions">
+      <button id="editCardBtn">Edit</button>
+      <button id="deleteCardBtn" style="background:#ffdddd;border-color:#ffaaaa">Delete</button>
+    </div>
+  </div>
+</section>
+
+<!-- TRAIN (manual) -->
+<section id="page-train" class="hidden">
+  <h2>Train</h2>
+  <div class="train-container">
+    <div class="train-card" id="trainCard">No cards available. Change collections or add cards.</div>
+    <input id="trainAnswer" class="train-input" placeholder="Type your answer">
+    <div class="train-buttons">
+      <button id="trainSkipBtn">Skip</button>
+      <button id="trainSubmitBtn">Submit</button>
+    </div>
+    <p id="trainProgress" style="margin-top:10px;font-size:14px;color:#555;"></p>
+  </div>
+  <div id="trainSummary" class="train-summary hidden">
+    <h3>Session complete</h3>
+    <p id="trainSummaryStats"></p>
+    <h4>Cards to practice again:</h4>
+    <ul id="trainWrongList"></ul>
+    <button id="trainDoAgainBtn" style="margin-top:10px;">Do Again (focus on missed)</button>
+  </div>
+</section>
+
+<!-- DAILY TRAINER -->
+<section id="page-daily" class="hidden">
+  <h2>Daily Trainer</h2>
+  <p style="font-size:14px;color:#555;max-width:500px;">
+    Smart daily revision: overdue cards first, then your weakest ones. Max 25 per session.
+  </p>
+  <div class="train-container">
+    <div class="train-card" id="dailyCard">No cards due right now. You’re all caught up!</div>
+    <input id="dailyAnswer" class="train-input" placeholder="Type your answer">
+    <div class="train-buttons">
+      <button id="dailySkipBtn">Skip</button>
+      <button id="dailySubmitBtn">Submit</button>
+    </div>
+    <p id="dailyProgress" style="margin-top:10px;font-size:14px;color:#555;"></p>
+  </div>
+  <div id="dailySummary" class="train-summary hidden">
+    <h3>Daily Trainer complete</h3>
+    <p id="dailySummaryStats"></p>
+    <h4>Weak cards:</h4>
+    <ul id="dailyWrongList"></ul>
+    <button id="dailyTrainWeakBtn" style="margin-top:10px;">Train These Again</button>
+    <button id="dailyRestartBtn" style="margin-top:10px;">Start New Daily Trainer</button>
+  </div>
+</section>
+
+<!-- GAME -->
+<section id="page-game" class="hidden">
+  <div id="gameIntro" style="text-align:center">
+    <img src="https://www.bing.com/th/id/OIP.85ZxLsipk8CjOyVw7KC0kgAAAA?w=188&h=150&c=8&rs=1&qlt=90&o=6&dpr=1.3&pid=3.1&rm=2" style="max-width:200px">
+    <p style="font-size:13px;color:#555;margin-top:6px;">
+      still in early development and we know it breaks a lot! We are working on it
+    </p>
+    <h2>Flappy Flashcards</h2>
+    <p>Fly through pipes by answering your cards.</p>
+    <button id="gameIntroPlayBtn">Play</button>
+  </div>
+
+  <div id="gameReady" class="hidden" style="text-align:center;margin-top:20px;">
+    <h2>Ready to play?</h2>
+    <p style="font-size:14px;color:#555;">Press Play Again to start a round. If you hit a pipe, you’ll come back here.</p>
+    <button id="gameReadyPlayBtn">Play Again</button>
+    <button id="gameReadyBackBtn" style="margin-left:10px;">Back</button>
+  </div>
+
+  <button id="backToGameMenu" class="hidden" style="
+    display:block;
+    margin:10px auto;
+    padding:8px 14px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    background:white;
+    cursor:pointer;
+  ">Back</button>
+
+  <canvas id="gameCanvas" width="320" height="480" class="hidden"></canvas>
+  <p id="scoreText" class="hidden"></p>
+  <p id="scoreSubtext" class="hidden" style="text-align:center;font-size:14px;color:#555;">Keep going!</p>
+
+  <div id="quizBox" class="hidden">
+    <p id="quizQuestion"></p>
+    <input id="quizAnswerInput" placeholder="Type your answer">
+    <button id="quizSubmitBtn">Submit</button>
+  </div>
+</section>
+
+<!-- CREATE CLASSROOM PAGE -->
+<section id="page-trainer" class="hidden">
+  <h2>Create Classroom</h2>
+  <p>Select collections to include, then generate a standalone trainer file you can give to students.</p>
+  <div class="trainer-collections" id="trainerCollections"></div>
+  <button id="generateTrainerBtn" style="margin-top:15px;">Generate Trainer File</button>
+</section>
+
+</main>
+
+<script>
+// ---------- DATA + MIGRATION ----------
+let data = JSON.parse(localStorage.getItem("flashcardsData") || "null") || {
+  collections:[{id:0,name:"All"},{id:1,name:"Default"}],
+  cards:[],
+  activeCollectionIds:[0]
+};
+
+if(!data.activeCollectionIds){
+  if(typeof data.activeCollectionId==="number") data.activeCollectionIds=[data.activeCollectionId];
+  else data.activeCollectionIds=[0];
+  delete data.activeCollectionId;
+}
+
+// ensure SM2-style fields
+function ensureCardFields(c){
+  if(typeof c.level!=="number") c.level=0;
+  if(typeof c.streak!=="number") c.streak=0;
+  if(typeof c.wrongCount!=="number") c.wrongCount=0;
+  if(typeof c.seenCount!=="number") c.seenCount=0;
+  if(typeof c.ease!=="number") c.ease=2.5;
+  if(typeof c.lastSeen!=="number") c.lastSeen=0;
+  if(typeof c.nextDue!=="number") c.nextDue=0;
+}
+data.cards.forEach(ensureCardFields);
+
+function save(){localStorage.setItem("flashcardsData",JSON.stringify(data));}
+
+// ---------- NAV ----------
+const pages=["create","collections","cards","train","daily","game","trainer"];
+function showPage(p){
+  pages.forEach(x=>document.getElementById("page-"+x).classList.add("hidden"));
+  document.getElementById("page-"+p).classList.remove("hidden");
+  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+  document.getElementById("tab-"+p).classList.add("active");
+  if(p==="collections")renderCollectionCards();
+  if(p==="cards")loadCardsPage();
+  if(p==="train")startTrainSession(false);
+  if(p==="daily")startDailyTrainer(false);
+  if(p==="trainer")renderTrainerCollections();
+}
+pages.forEach(p=>document.getElementById("tab-"+p).onclick=()=>showPage(p));
+
+// ---------- COLLECTION SELECT FOR CREATE ----------
+const collectionSelect=document.getElementById("collectionSelect");
+function renderCollectionSelect(){
+  collectionSelect.innerHTML="";
+  data.collections.forEach(c=>{
+    if(c.id===0)return;
+    let o=document.createElement("option");
+    o.value=c.id;o.textContent=c.name;
+    collectionSelect.appendChild(o);
+  });
+  if(collectionSelect.options.length){
+    const current = collectionSelect.value;
+    const exists = [...collectionSelect.options].some(o=>o.value===current);
+    if(exists) collectionSelect.value=current;
+    else collectionSelect.value=collectionSelect.options[collectionSelect.options.length-1].value;
+  }
+}
+
+// ---------- MULTI COLLECTION SELECTION ----------
+const collectionsList=document.getElementById("collectionsList");
+function toggleCollectionSelection(id){
+  let ids=data.activeCollectionIds.slice();
+  if(id===0){data.activeCollectionIds=[0];return;}
+  ids=ids.filter(x=>x!==0);
+  if(ids.includes(id)){
+    if(ids.length===1){data.activeCollectionIds=[0];return;}
+    ids=ids.filter(x=>x!==id);
+  }else ids.push(id);
+  if(!ids.length)ids=[0];
+  data.activeCollectionIds=ids;
+}
+function renderCollections(){
+  collectionsList.innerHTML="";
+  data.collections.forEach(c=>{
+    let d=document.createElement("div");
+    d.className="collection-box"+(data.activeCollectionIds.includes(c.id)?" active":"");
+    let label=document.createElement("span");label.textContent=c.name;
+    let tag=document.createElement("span");tag.className="tag";if(c.id===0)tag.textContent="All cards";
+    d.appendChild(label);if(tag.textContent)d.appendChild(tag);
+    d.onclick=()=>{toggleCollectionSelection(c.id);save();renderCollections();renderCollectionCards();loadCardsPage();};
+    collectionsList.appendChild(d);
+  });
+}
+function getActiveCards(){
+  if(!data.cards.length)return[];
+  const ids=data.activeCollectionIds;
+  if(ids.includes(0))return data.cards.slice();
+  return data.cards.filter(c=>ids.includes(c.collectionId));
+}
+const collectionCards=document.getElementById("collectionCards");
+function renderCollectionCards(){
+  collectionCards.innerHTML="";
+  const cards=getActiveCards();
+  if(!cards.length){collectionCards.textContent="No cards in selected collections.";return;}
+  cards.forEach(c=>{
+    let d=document.createElement("div");
+    d.innerHTML="<b>"+c.question+"</b><br><small>"+c.answer+"</small>";
+    collectionCards.appendChild(d);
+  });
+}
+
+// ---------- ADD COLLECTION ----------
+document.getElementById("addCollectionBtn").onclick=()=>{
+  let n=document.getElementById("newCollectionName").value.trim();
+  if(!n)return;
+  const id=Date.now();
+  data.collections.push({id,name:n});
+  document.getElementById("newCollectionName").value="";
+  // auto-select new collection for everything
+  data.activeCollectionIds=[id];
+  save();
+  renderCollections();
+  renderCollectionSelect();
+  collectionSelect.value=String(id);
+  renderCollectionCards();
+  loadCardsPage();
+  renderTrainerCollections();
+};
+
+// ---------- ADD CARD ----------
+document.getElementById("addCardBtn").onclick=()=>{
+  let q=document.getElementById("questionInput").value.trim();
+  let a=document.getElementById("answerInput").value.trim();
+  if(!q||!a||!collectionSelect.value)return;
+  const now=Date.now();
+  const card={
+    id:Date.now(),
+    question:q,
+    answer:a,
+    collectionId:+collectionSelect.value,
+    level:0,
+    streak:0,
+    wrongCount:0,
+    seenCount:0,
+    ease:2.5,
+    lastSeen:0,
+    nextDue:now // due immediately
+  };
+  data.cards.push(card);
+  document.getElementById("questionInput").value="";
+  document.getElementById("answerInput").value="";
+  save();renderPreview();loadCardsPage();
+};
+
+// ---------- PREVIEW ----------
+const previewCards=document.getElementById("previewCards");
+function renderPreview(){
+  previewCards.innerHTML="";
+  data.cards.slice(-6).reverse().forEach(c=>{
+    let d=document.createElement("div");
+    d.className="mini-card";d.textContent=c.question;
+    previewCards.appendChild(d);
+  });
+}
+
+// ---------- CARDS PAGE: GRID + SINGLE VIEW ----------
+const cardsGrid=document.getElementById("cardsGrid");
+const cardsGridView=document.getElementById("cardsGridView");
+const singleCardView=document.getElementById("singleCardView");
+const flipCard=document.getElementById("flipCard");
+const frontFace=document.getElementById("frontFace");
+const backFace=document.getElementById("backFace");
+const cardsBackToGridBtn=document.getElementById("cardsBackToGridBtn");
+let cardsPageIndex=0;
+
+function loadCardsPage(){
+  const cards=getActiveCards();
+  cardsGrid.innerHTML="";
+  if(!cards.length){
+    cardsGrid.innerHTML="<p>No cards in selected collections.</p>";
+    cardsGridView.classList.remove("hidden");
+    singleCardView.classList.add("hidden");
+    return;
+  }
+  cards.forEach((c,i)=>{
+    const div=document.createElement("div");
+    div.className="cards-grid-item";
+    div.innerHTML="<span>"+c.question+"</span>";
+    div.onclick=()=>{
+      cardsPageIndex=i;
+      showSingleCardView();
+    };
+    cardsGrid.appendChild(div);
+  });
+  cardsGridView.classList.remove("hidden");
+  singleCardView.classList.add("hidden");
+}
+function showSingleCardView(){
+  const cards=getActiveCards();
+  if(!cards.length)return;
+  const c=cards[(cardsPageIndex+cards.length)%cards.length];
+  frontFace.textContent=c.question;
+  backFace.textContent=c.answer;
+  flipCard.classList.remove("flipped");
+  cardsGridView.classList.add("hidden");
+  singleCardView.classList.remove("hidden");
+}
+cardsBackToGridBtn.onclick=()=>{
+  singleCardView.classList.add("hidden");
+  cardsGridView.classList.remove("hidden");
+};
+document.getElementById("flipBtn").onclick=()=>flipCard.classList.toggle("flipped");
+document.getElementById("prevBtn").onclick=()=>{
+  const cards=getActiveCards();if(!cards.length)return;
+  cardsPageIndex=(cardsPageIndex-1+cards.length)%cards.length;
+  showSingleCardView();
+};
+document.getElementById("nextBtn").onclick=()=>{
+  const cards=getActiveCards();if(!cards.length)return;
+  cardsPageIndex=(cardsPageIndex+1)%cards.length;
+  showSingleCardView();
+};
+document.getElementById("editCardBtn").onclick=()=>{
+  const cards=getActiveCards();if(!cards.length)return;
+  const c=cards[(cardsPageIndex+cards.length)%cards.length];
+  const newQ=prompt("Edit question:",c.question);
+  if(newQ===null)return;
+  const newA=prompt("Edit answer:",c.answer);
+  if(newA===null)return;
+  const real=data.cards.find(x=>x.id===c.id);
+  if(real){
+    real.question=newQ.trim();
+    real.answer=newA.trim();
+    save();renderPreview();renderCollectionCards();loadCardsPage();showSingleCardView();
+  }
+};
+document.getElementById("deleteCardBtn").onclick=()=>{
+  const cards=getActiveCards();if(!cards.length)return;
+  const c=cards[(cardsPageIndex+cards.length)%cards.length];
+  if(!confirm("Delete this card?"))return;
+  data.cards=data.cards.filter(x=>x.id!==c.id);
+  save();renderPreview();renderCollectionCards();loadCardsPage();
+};
+
+// ---------- SM2-STYLE LEARNING CORE ----------
+const baseIntervalsMs=[
+  10*60*1000,        // level 0: 10 min
+  24*60*60*1000,     // level 1: 1 day
+  3*24*60*60*1000,   // level 2: 3 days
+  7*24*60*60*1000,   // level 3: 7 days
+  21*24*60*60*1000,  // level 4: 21 days
+  60*24*60*60*1000   // level 5: 60 days
+];
+
+function updateCardLearning(card,isCorrect,now){
+  ensureCardFields(card);
+  card.seenCount++;
+  card.lastSeen=now;
+  if(isCorrect){
+    card.streak++;
+    card.level=Math.min(card.level+1,5);
+    card.ease=Math.min(card.ease+0.1,3.0);
+  }else{
+    card.streak=0;
+    card.wrongCount++;
+    card.level=Math.max(card.level-1,0);
+    card.ease=Math.max(card.ease-0.2,1.3);
+  }
+  const base=baseIntervalsMs[card.level]||baseIntervalsMs[0];
+  const interval=base*card.ease;
+  card.nextDue=now+interval;
+}
+
+// priority: nextDue (oldest), level (low), wrongCount (high), lastSeen (oldest)
+function sortByPriority(cards){
+  return cards.slice().sort((a,b)=>{
+    if(a.nextDue!==b.nextDue) return a.nextDue-b.nextDue;
+    if(a.level!==b.level) return a.level-b.level;
+    if(a.wrongCount!==b.wrongCount) return b.wrongCount-a.wrongCount;
+    return a.lastSeen-b.lastSeen;
+  });
+}
+
+// ---------- TRAIN (MANUAL) ----------
+let trainQueue=[];
+let trainIndex=0;
+let trainCorrect=0;
+let trainWrong=0;
+let trainWrongCards=[];
+const trainCardEl=document.getElementById("trainCard");
+const trainAnswerEl=document.getElementById("trainAnswer");
+const trainProgressEl=document.getElementById("trainProgress");
+const trainSummaryEl=document.getElementById("trainSummary");
+const trainSummaryStatsEl=document.getElementById("trainSummaryStats");
+const trainWrongListEl=document.getElementById("trainWrongList");
+const trainDoAgainBtn=document.getElementById("trainDoAgainBtn");
+
+function buildTrainQueueManual(fromWeak){
+  const cards=getActiveCards();
+  if(!cards.length)return[];
+  if(fromWeak){
+    return sortByPriority(cards).slice(0,25);
+  }
+  return sortByPriority(cards);
+}
+function startTrainSession(fromWeak){
+  trainQueue=buildTrainQueueManual(fromWeak);
+  trainIndex=0;trainCorrect=0;trainWrong=0;trainWrongCards=[];
+  trainSummaryEl.classList.add("hidden");
+  if(!trainQueue.length){
+    trainCardEl.textContent="No cards available. Change collections or add cards.";
+    trainAnswerEl.value="";trainAnswerEl.disabled=true;
+    trainProgressEl.textContent="";
+    return;
+  }
+  trainAnswerEl.disabled=false;
+  showCurrentTrainCard();
+}
+function showCurrentTrainCard(){
+  if(trainIndex>=trainQueue.length){endTrainSession();return;}
+  const c=trainQueue[trainIndex];
+  trainCardEl.textContent=c.question;
+  trainAnswerEl.value="";
+  trainAnswerEl.focus();
+  trainProgressEl.textContent="Card "+(trainIndex+1)+" of "+trainQueue.length;
+}
+function handleTrainResult(isSkip){
+  if(trainIndex>=trainQueue.length)return;
+  const c=trainQueue[trainIndex];
+  const userAns=trainAnswerEl.value.trim();
+  const correctAns=c.answer.trim();
+  const now=Date.now();
+  let isCorrect=!isSkip && userAns.toLowerCase()===correctAns.toLowerCase();
+  const real=data.cards.find(x=>x.id===c.id);
+  if(real){
+    updateCardLearning(real,isCorrect,now);
+    if(isCorrect) trainCorrect++; else{trainWrong++;trainWrongCards.push(real);}
+  }
+  save();
+  trainIndex++;
+  showCurrentTrainCard();
+}
+function endTrainSession(){
+  trainCardEl.textContent="Session complete!";
+  trainAnswerEl.value="";trainAnswerEl.disabled=true;
+  trainProgressEl.textContent="";
+  trainSummaryEl.classList.remove("hidden");
+  trainSummaryStatsEl.textContent="Correct: "+trainCorrect+" | Wrong: "+trainWrong;
+  trainWrongListEl.innerHTML="";
+  if(!trainWrongCards.length){
+    const li=document.createElement("li");
+    li.textContent="None – you got everything right!";
+    trainWrongListEl.appendChild(li);
+  }else{
+    trainWrongCards.forEach(c=>{
+      const li=document.createElement("li");
+      li.textContent=c.question+" → "+c.answer;
+      trainWrongListEl.appendChild(li);
+    });
+  }
+  launchConfetti();
+}
+document.getElementById("trainSubmitBtn").onclick=()=>handleTrainResult(false);
+document.getElementById("trainSkipBtn").onclick=()=>handleTrainResult(true);
+trainAnswerEl.addEventListener("keydown",e=>{
+  if(e.key==="Enter"){e.preventDefault();handleTrainResult(false);}
+});
+trainDoAgainBtn.onclick=()=>{
+  if(!trainWrongCards.length){startTrainSession(true);return;}
+  trainQueue=sortByPriority(trainWrongCards);
+  trainIndex=0;trainCorrect=0;trainWrong=0;trainWrongCards=[];
+  trainSummaryEl.classList.add("hidden");
+  trainAnswerEl.disabled=false;
+  showCurrentTrainCard();
+};
+
+// ---------- DAILY TRAINER ----------
+let dailyQueue=[];
+let dailyIndex=0;
+let dailyCorrect=0;
+let dailyWrong=0;
+let dailyWrongCards=[];
+const dailyCardEl=document.getElementById("dailyCard");
+const dailyAnswerEl=document.getElementById("dailyAnswer");
+const dailyProgressEl=document.getElementById("dailyProgress");
+const dailySummaryEl=document.getElementById("dailySummary");
+const dailySummaryStatsEl=document.getElementById("dailySummaryStats");
+const dailyWrongListEl=document.getElementById("dailyWrongList");
+const dailyTrainWeakBtn=document.getElementById("dailyTrainWeakBtn");
+const dailyRestartBtn=document.getElementById("dailyRestartBtn");
+
+function buildDailyQueue(fromWeak){
+  const cards=getActiveCards();
+  if(!cards.length)return[];
+  const now=Date.now();
+  if(fromWeak && dailyWrongCards.length){
+    return sortByPriority(dailyWrongCards).slice(0,25);
+  }
+  const due=cards.filter(c=>c.nextDue<=now);
+  let pool;
+  if(due.length){
+    pool=sortByPriority(due);
+  }else{
+    pool=sortByPriority(cards);
+  }
+  return pool.slice(0,25);
+}
+function startDailyTrainer(fromWeak){
+  dailyQueue=buildDailyQueue(fromWeak);
+  dailyIndex=0;dailyCorrect=0;dailyWrong=0;dailyWrongCards=[];
+  dailySummaryEl.classList.add("hidden");
+  if(!dailyQueue.length){
+    dailyCardEl.textContent="No cards due right now. You’re all caught up!";
+    dailyAnswerEl.value="";dailyAnswerEl.disabled=true;
+    dailyProgressEl.textContent="";
+    return;
+  }
+  dailyAnswerEl.disabled=false;
+  showCurrentDailyCard();
+}
+function showCurrentDailyCard(){
+  if(dailyIndex>=dailyQueue.length){endDailySession();return;}
+  const c=dailyQueue[dailyIndex];
+  dailyCardEl.textContent=c.question;
+  dailyAnswerEl.value="";
+  dailyAnswerEl.focus();
+  dailyProgressEl.textContent="Card "+(dailyIndex+1)+" of "+dailyQueue.length;
+}
+function handleDailyResult(isSkip){
+  if(dailyIndex>=dailyQueue.length)return;
+  const c=dailyQueue[dailyIndex];
+  const userAns=dailyAnswerEl.value.trim();
+  const correctAns=c.answer.trim();
+  const now=Date.now();
+  let isCorrect=!isSkip && userAns.toLowerCase()===correctAns.toLowerCase();
+  const real=data.cards.find(x=>x.id===c.id);
+  if(real){
+    updateCardLearning(real,isCorrect,now);
+    if(isCorrect) dailyCorrect++; else{dailyWrong++;dailyWrongCards.push(real);}
+  }
+  save();
+  dailyIndex++;
+  showCurrentDailyCard();
+}
+function endDailySession(){
+  dailyCardEl.textContent="Daily Trainer complete!";
+  dailyAnswerEl.value="";dailyAnswerEl.disabled=true;
+  dailyProgressEl.textContent="";
+  dailySummaryEl.classList.remove("hidden");
+  const total=dailyCorrect+dailyWrong||1;
+  const pct=Math.round((dailyCorrect/total)*100);
+  dailySummaryStatsEl.textContent="Correct: "+dailyCorrect+" | Wrong: "+dailyWrong+" ("+pct+"% correct)";
+  dailyWrongListEl.innerHTML="";
+  if(!dailyWrongCards.length){
+    const li=document.createElement("li");
+    li.textContent="None – you nailed everything today!";
+    dailyWrongListEl.appendChild(li);
+  }else{
+    dailyWrongCards.forEach(c=>{
+      const li=document.createElement("li");
+      li.textContent=c.question+" → "+c.answer;
+      dailyWrongListEl.appendChild(li);
+    });
+  }
+  launchConfetti();
+}
+document.getElementById("dailySubmitBtn").onclick=()=>handleDailyResult(false);
+document.getElementById("dailySkipBtn").onclick=()=>handleDailyResult(true);
+dailyAnswerEl.addEventListener("keydown",e=>{
+  if(e.key==="Enter"){e.preventDefault();handleDailyResult(false);}
+});
+dailyTrainWeakBtn.onclick=()=>startDailyTrainer(true);
+dailyRestartBtn.onclick=()=>startDailyTrainer(false);
+
+// ---------- CONFETTI ----------
+function launchConfetti(){
+  const colors=["#ff7675","#74b9ff","#ffeaa7","#55efc4","#fd79a8"];
+  const count=80;
+  for(let i=0;i<count;i++){
+    const div=document.createElement("div");
+    div.className="confetti-piece";
+    div.style.left=Math.random()*100+"vw";
+    div.style.background=colors[Math.floor(Math.random()*colors.length)];
+    const duration=3+Math.random()*2;
+    const delay=Math.random()*0.5;
+    div.style.transition="transform "+duration+"s linear, top "+duration+"s linear, opacity "+duration+"s linear";
+    div.style.transitionDelay=delay+"s";
+    document.body.appendChild(div);
+    requestAnimationFrame(()=>{
+      div.style.top="110vh";
+      div.style.transform="translateX("+((Math.random()*2-1)*200)+"px) rotate("+(Math.random()*720)+"deg)";
+      div.style.opacity="0";
+    });
+    setTimeout(()=>{div.remove();},(duration+1)*1000);
+  }
+}
+
+// ---------- GAME ----------
+const canvas=document.getElementById("gameCanvas");
+const ctx=canvas.getContext("2d");
+const gameIntro=document.getElementById("gameIntro");
+const gameReady=document.getElementById("gameReady");
+const gameIntroPlayBtn=document.getElementById("gameIntroPlayBtn");
+const gameReadyPlayBtn=document.getElementById("gameReadyPlayBtn");
+const gameReadyBackBtn=document.getElementById("gameReadyBackBtn");
+const backToGameMenuBtn=document.getElementById("backToGameMenu");
+const quizBox=document.getElementById("quizBox");
+const quizQuestion=document.getElementById("quizQuestion");
+const quizAnswerInput=document.getElementById("quizAnswerInput");
+const quizSubmitBtn=document.getElementById("quizSubmitBtn");
+const scoreText=document.getElementById("scoreText");
+const scoreSubtext=document.getElementById("scoreSubtext");
+
+let bird={x:60,y:200,v:0};
+let pipes=[];
+let score=0;
+let paused=false;
+let currentCard=null;
+let gameRunning=false;
+
+const GRAVITY=0.15;
+const FLAP_STRENGTH=-7.5;
+const PIPE_GAP=220;
+const PIPE_SPEED=1.6;
+
+function resetGameState(){
+  bird={x:60,y:200,v:0};
+  pipes=[];
+  score=0;
+  paused=false;
+  currentCard=null;
+}
+
+function showGameIntro(){
+  gameIntro.classList.remove("hidden");
+  gameReady.classList.add("hidden");
+  canvas.classList.add("hidden");
+  quizBox.classList.add("hidden");
+  scoreText.classList.add("hidden");
+  scoreSubtext.classList.add("hidden");
+  backToGameMenuBtn.classList.add("hidden");
+  gameRunning=false;
+  paused=false;
+}
+
+function showGameReady(){
+  gameIntro.classList.add("hidden");
+  gameReady.classList.remove("hidden");
+  canvas.classList.add("hidden");
+  quizBox.classList.add("hidden");
+  scoreText.classList.add("hidden");
+  scoreSubtext.classList.add("hidden");
+  backToGameMenuBtn.classList.add("hidden");
+  gameRunning=false;
+  paused=false;
+  resetGameState();
+}
+
+function startGame(){
+  const cards=getActiveCards();
+  if(!cards.length){alert("You need cards in the selected collections to play.");return;}
+  gameReady.classList.add("hidden");
+  canvas.classList.remove("hidden");
+  scoreText.classList.remove("hidden");
+  scoreSubtext.classList.remove("hidden");
+  backToGameMenuBtn.classList.remove("hidden");
+  resetGameState();
+  newPipe();
+  if(!gameRunning){
+    gameRunning=true;
+    requestAnimationFrame(loop);
+  }
+}
+
+function newPipe(){
+  let top=Math.random()*180+40;
+  pipes.push({x:320,top,gap:PIPE_GAP,asked:false,scored:false});
+}
+
+function askQuestionForPipe(pipe){
+  const cards=getActiveCards();
+  if(!cards.length){
+    crashAndReturnToReady();
+    return;
+  }
+  paused=true;
+  currentCard={pipe:pipe,card:cards[Math.floor(Math.random()*cards.length)]};
+  quizQuestion.textContent=currentCard.card.question;
+  quizAnswerInput.value="";
+  quizBox.classList.remove("hidden");
+  quizAnswerInput.focus();
+}
+
+quizSubmitBtn.onclick=()=>{
+  if(!currentCard)return;
+  const userAns=quizAnswerInput.value.trim();
+  const correct=currentCard.card.answer.trim();
+  if(userAns.toLowerCase()===correct.toLowerCase()){
+    paused=false;
+    quizBox.classList.add("hidden");
+    currentCard=null;
+  }else{
+    crashAndReturnToReady();
+  }
+};
+
+function crashAndReturnToReady(){
+  // stop game immediately and go back to "Play Again" screen
+  gameRunning=false;
+  paused=false;
+  quizBox.classList.add("hidden");
+  canvas.classList.add("hidden");
+  scoreText.classList.add("hidden");
+  scoreSubtext.classList.add("hidden");
+  backToGameMenuBtn.classList.add("hidden");
+  showGameReady();
+}
+
+function loop(){
+  if(!gameRunning)return;
+  if(!paused){
+    ctx.clearRect(0,0,320,480);
+    bird.v+=GRAVITY;bird.y+=bird.v;
+    ctx.fillStyle="yellow";ctx.fillRect(bird.x,bird.y,20,20);
+
+    pipes.forEach(p=>{
+      p.x-=PIPE_SPEED;
+      ctx.fillStyle="green";
+      ctx.fillRect(p.x,0,50,p.top);
+      ctx.fillRect(p.x,p.top+p.gap,50,480);
+
+      if(!p.asked&&p.x<bird.x+10){
+        p.asked=true;askQuestionForPipe(p);
+      }
+      if(!p.scored&&p.x+50<bird.x){
+        p.scored=true;score++;
+      }
+
+      const hitHoriz=bird.x+18>p.x&&bird.x<p.x+48;
+      const hitVert=(bird.y+2<p.top)||(bird.y+18>p.top+p.gap);
+      if(!paused&&hitHoriz&&hitVert){
+        crashAndReturnToReady();
+      }
+    });
+
+    if(pipes[0]&&pipes[0].x<-60)pipes.shift();
+    if(!pipes.length||pipes[pipes.length-1].x<80)newPipe();
+
+    if(bird.y>460||bird.y<0){
+      crashAndReturnToReady();
+    }
+    scoreText.textContent="Score: "+score;
+    scoreSubtext.textContent="Pipes passed: "+score;
+  }
+  if(gameRunning) requestAnimationFrame(loop);
+}
+
+canvas.addEventListener("mousedown",()=>{bird.v=FLAP_STRENGTH;});
+window.addEventListener("keydown",e=>{
+  if(e.code==="Space"){e.preventDefault();bird.v=FLAP_STRENGTH;}
+});
+
+backToGameMenuBtn.onclick=()=>{
+  showGameIntro();
+};
+
+gameIntroPlayBtn.onclick=showGameReady;
+gameReadyPlayBtn.onclick=startGame;
+gameReadyBackBtn.onclick=showGameIntro;
+
+// ---------- EXPORT TO PRINT ----------
+document.getElementById("btn-export-print").onclick=()=>{
+  const cards=getActiveCards();
+  if(!cards.length){alert("No cards in selected collections to export.");return;}
+  const win=window.open("","_blank");
+  const perPage=9;
+  let html="<html><head><title>flashcardsmadefun export</title>"+
+  "<style>body{font-family:Arial,Helvetica,sans-serif;margin:20px;background:#f5f6fa}"+
+  "h1{margin-top:0}.toolbar{margin-bottom:15px}.toolbar button{padding:8px 14px;border-radius:8px;border:1px solid #ccc;background:white;cursor:pointer;font-weight:bold}"+
+  ".print-page{page-break-after:always;margin-bottom:20px}.print-title{margin:0 0 10px 0;font-size:18px}"+
+  ".print-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.print-card{border:1px solid #000;padding:10px;min-height:60px;box-sizing:border-box;font-size:12px;background:#fff}"+
+  "@media print{body{margin:10px;background:#fff}.toolbar{display:none}}</style></head><body>"+
+  "<h1>flashcardsmadefun export</h1>"+
+  "<div class='toolbar'><button onclick='window.print()'>Print</button></div>";
+  for(let i=0;i<cards.length;i+=perPage){
+    const chunk=cards.slice(i,i+perPage);
+    html+="<div class='print-page'><h2 class='print-title'>Questions</h2><div class='print-grid'>";
+    chunk.forEach(c=>{html+="<div class='print-card'>"+c.question+"</div>";});
+    html+="</div></div>";
+    html+="<div class='print-page'><h2 class='print-title'>Answers</h2><div class='print-grid'>";
+    chunk.forEach(c=>{html+="<div class='print-card'>"+c.answer+"</div>";});
+    html+="</div></div>";
+  }
+  html+="</body></html>";
+  win.document.open();win.document.write(html);win.document.close();
+};
+
+// ---------- JSON EXPORT / IMPORT ----------
+document.getElementById("btn-export-json").onclick=()=>{
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download="flashcards.json";
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+};
+const importFile=document.getElementById("importFile");
+document.getElementById("btn-import-json").onclick=()=>importFile.click();
+importFile.addEventListener("change",e=>{
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const imported=JSON.parse(ev.target.result);
+      if(imported.collections&&imported.cards){
+        data=imported;
+        if(!data.activeCollectionIds)data.activeCollectionIds=[0];
+        data.cards.forEach(ensureCardFields);
+        save();
+        renderCollections();renderCollectionSelect();renderPreview();renderCollectionCards();loadCardsPage();renderTrainerCollections();
+        alert("Flashcards imported successfully.");
+      }else alert("Invalid file format.");
+    }catch(err){alert("Could not read file.");}
+  };
+  reader.readAsText(file);
+});
+
+// ---------- CREATE CLASSROOM PAGE ----------
+const trainerCollections=document.getElementById("trainerCollections");
+function renderTrainerCollections(){
+  trainerCollections.innerHTML="";
+  const cols=data.collections.filter(c=>c.id!==0);
+  if(!cols.length){
+    trainerCollections.innerHTML="<p>No collections yet. Create some first.</p>";
+    return;
+  }
+  cols.forEach(c=>{
+    const label=document.createElement("label");
+    label.innerHTML="<input type='checkbox' value='"+c.id+"'> "+c.name;
+    trainerCollections.appendChild(label);
+  });
+}
+document.getElementById("generateTrainerBtn").onclick=()=>{
+  const checked=[...trainerCollections.querySelectorAll("input:checked")].map(i=>+i.value);
+  if(!checked.length){alert("Select at least one collection.");return;}
+  const selectedCards=data.cards.filter(c=>checked.includes(c.collectionId));
+  if(!selectedCards.length){alert("No cards in those collections.");return;}
+  generateTrainerFile(selectedCards);
+};
+function generateTrainerFile(cards){
+  const trainerData={cards:cards};
+  const dataJson=JSON.stringify(trainerData).replace(/</g,"\\u003c");
+  const html="<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Classroom Trainer</title>"+
+  "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"+
+  "<style>body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f6fa}main{padding:20px;max-width:600px;margin:0 auto}h1{text-align:center}"+
+  "a.main-link{position:fixed;top:10px;right:10px;font-size:12px;color:#555;text-decoration:none;background:#fff;padding:6px 10px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.15);}"+
+  ".train-card{background:white;padding:30px;border-radius:14px;box-shadow:0 4px 10px rgba(0,0,0,.15);min-height:120px;margin-bottom:15px;font-size:18px;text-align:center}"+
+  ".train-input{width:100%;box-sizing:border-box;margin-bottom:10px;padding:8px;border-radius:6px;border:1px solid #ccc}"+
+  ".train-buttons{display:flex;gap:10px;justify-content:center}.train-buttons button{flex:1;padding:8px;border-radius:6px;border:1px solid #ccc;background:white;cursor:pointer}"+
+  ".train-summary{background:white;padding:20px;border-radius:14px;box-shadow:0 4px 10px rgba(0,0,0,.15);margin-top:20px;font-size:14px}"+
+  ".train-summary ul{padding-left:18px}.confetti-piece{position:fixed;width:8px;height:14px;top:-20px;z-index:2000;opacity:0.9;border-radius:2px;pointer-events:none}</style></head><body>"+
+  "<a href='https://flashcardsmadefun.vercel.app/' class='main-link'>Back to main site</a>"+
+  "<main><h1>Classroom Trainer</h1><p style='text-align:center;font-size:14px;color:#555;'>Practice only the cards your teacher included.</p>"+
+  "<div class='train-card' id='trainCard'>Loading…</div>"+
+  "<input id='trainAnswer' class='train-input' placeholder='Type your answer'>"+
+  "<div class='train-buttons'><button id='trainSkipBtn'>Skip</button><button id='trainSubmitBtn'>Submit</button></div>"+
+  "<p id='trainProgress' style='margin-top:10px;font-size:14px;color:#555;'></p>"+
+  "<div id='trainSummary' class='train-summary' style='display:none'><h3>Session complete</h3><p id='trainSummaryStats'></p>"+
+  "<button id='redoWrongBtn' style='margin-bottom:10px;'>Redo focus on weak cards</button>"+
+  "<h4>Cards to practice again:</h4><ul id='trainWrongList'></ul></div>"+
+  "</main><script>const baseIntervalsMs=[600000,86400000,259200000,604800000,1814400000,5184000000];"+
+  "let data="+dataJson+";data.cards.forEach(c=>{if(typeof c.level!=='number')c.level=0;if(typeof c.streak!=='number')c.streak=0;if(typeof c.wrongCount!=='number')c.wrongCount=0;if(typeof c.seenCount!=='number')c.seenCount=0;if(typeof c.ease!=='number')c.ease=2.5;if(typeof c.lastSeen!=='number')c.lastSeen=0;if(typeof c.nextDue!=='number')c.nextDue=0;});"+
+  "function updateCardLearning(card,isCorrect,now){card.seenCount++;card.lastSeen=now;if(isCorrect){card.streak++;card.level=Math.min(card.level+1,5);card.ease=Math.min(card.ease+0.1,3.0);}else{card.streak=0;card.wrongCount++;card.level=Math.max(card.level-1,0);card.ease=Math.max(card.ease-0.2,1.3);}const base=baseIntervalsMs[card.level]||baseIntervalsMs[0];const interval=base*card.ease;card.nextDue=now+interval;}"+
+  "function sortByPriority(cards){return cards.slice().sort((a,b)=>{if(a.nextDue!==b.nextDue)return a.nextDue-b.nextDue;if(a.level!==b.level)return a.level-b.level;if(a.wrongCount!==b.wrongCount)return b.wrongCount-a.wrongCount;return a.lastSeen-b.lastSeen;});}"+
+  "let trainQueue=[];let trainIndex=0;let trainCorrect=0;let trainWrong=0;let trainWrongCards=[];"+
+  "const trainCardEl=document.getElementById('trainCard');const trainAnswerEl=document.getElementById('trainAnswer');const trainProgressEl=document.getElementById('trainProgress');const trainSummaryEl=document.getElementById('trainSummary');const trainSummaryStatsEl=document.getElementById('trainSummaryStats');const trainWrongListEl=document.getElementById('trainWrongList');const redoWrongBtn=document.getElementById('redoWrongBtn');"+
+  "function buildQueue(fromWeak){const cards=data.cards.slice();if(!cards.length)return[];if(fromWeak&&trainWrongCards.length){return sortByPriority(trainWrongCards);}return sortByPriority(cards);}"+
+  "function startSession(fromWeak){trainQueue=buildQueue(fromWeak);trainIndex=0;trainCorrect=0;trainWrong=0;trainWrongCards=[];trainSummaryEl.style.display='none';if(!trainQueue.length){trainCardEl.textContent='No cards available.';trainAnswerEl.value='';trainAnswerEl.disabled=true;trainProgressEl.textContent='';return;}trainAnswerEl.disabled=false;showCurrent();}"+
+  "function showCurrent(){if(trainIndex>=trainQueue.length){endSession();return;}const c=trainQueue[trainIndex];trainCardEl.textContent=c.question;trainAnswerEl.value='';trainAnswerEl.focus();trainProgressEl.textContent='Card '+(trainIndex+1)+' of '+trainQueue.length;}"+
+  "function handleResult(isSkip){if(trainIndex>=trainQueue.length)return;const c=trainQueue[trainIndex];const userAns=trainAnswerEl.value.trim();const correctAns=c.answer.trim();const now=Date.now();let isCorrect=!isSkip&&userAns.toLowerCase()===correctAns.toLowerCase();updateCardLearning(c,isCorrect,now);if(isCorrect)trainCorrect++;else{trainWrong++;trainWrongCards.push(c);}trainIndex++;showCurrent();}"+
+  "function endSession(){trainCardEl.textContent='Session complete!';trainAnswerEl.value='';trainAnswerEl.disabled=true;trainProgressEl.textContent='';trainSummaryEl.style.display='block';trainSummaryStatsEl.textContent='Correct: '+trainCorrect+' | Wrong: '+trainWrong;trainWrongListEl.innerHTML='';if(!trainWrongCards.length){const li=document.createElement('li');li.textContent='None – you got everything right!';trainWrongListEl.appendChild(li);}else{trainWrongCards.forEach(c=>{const li=document.createElement('li');li.textContent=c.question+' → '+c.answer;trainWrongListEl.appendChild(li);});}launchConfetti();}"+
+  "document.getElementById('trainSubmitBtn').onclick=()=>handleResult(false);document.getElementById('trainSkipBtn').onclick=()=>handleResult(true);trainAnswerEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();handleResult(false);}});"+
+  "redoWrongBtn.onclick=()=>{startSession(true);};"+
+  "function launchConfetti(){const colors=['#ff7675','#74b9ff','#ffeaa7','#55efc4','#fd79a8'];const count=80;for(let i=0;i<count;i++){const div=document.createElement('div');div.className='confetti-piece';div.style.left=Math.random()*100+'vw';div.style.background=colors[Math.floor(Math.random()*colors.length)];const duration=3+Math.random()*2;const delay=Math.random()*0.5;div.style.transition='transform '+duration+'s linear, top '+duration+'s linear, opacity '+duration+'s linear';div.style.transitionDelay=delay+'s';document.body.appendChild(div);requestAnimationFrame(()=>{div.style.top='110vh';div.style.transform='translateX('+((Math.random()*2-1)*200)+'px) rotate('+(Math.random()*720)+'deg)';div.style.opacity='0';});setTimeout(()=>{div.remove();},(duration+1)*1000);}}"+
+  "startSession(false);<\/script></body></html>";
+  const blob=new Blob([html],{type:"text/html"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download="flashcard_trainer.html";
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+// ---------- INIT ----------
+renderCollections();
+renderCollectionSelect();
+renderPreview();
+loadCardsPage();
+renderTrainerCollections();
+save();
+</script>
+</body>
+</html>
